@@ -8,6 +8,7 @@ function App() {
   const [recording, setRecording] = useState(false);
   const [audioChunks, setAudioChunks] = useState([]);
   const [transcript, setTranscript] = useState('');
+  const [loading, setLoading] = useState(false);
   const mediaRecorderRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -30,7 +31,7 @@ function App() {
 
     mediaRecorderRef.current.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        setAudioChunks(prev => [...prev, event.data]);
+        setAudioChunks((prev) => [...prev, event.data]);
       }
     };
 
@@ -51,8 +52,8 @@ function App() {
     setRecording(false);
 
     mediaRecorderRef.current.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      const audioFile = new File([audioBlob], 'recorded_audio.webm', { type: 'audio/webm' });
+      const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' }); // use audio/mpeg
+      const audioFile = new File([audioBlob], 'recorded_audio.mp3', { type: 'audio/mpeg' });
       setSelectedFile(audioFile);
       setAudioURL(URL.createObjectURL(audioBlob));
     };
@@ -64,6 +65,7 @@ function App() {
     formData.append('audio', selectedFile);
 
     try {
+      setLoading(true);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
         method: 'POST',
         body: formData,
@@ -72,7 +74,10 @@ function App() {
       const data = await response.json();
       setTranscript(data.transcript);
     } catch (err) {
+      console.error('Transcription error:', err);
       setError('Error transcribing audio. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,18 +100,21 @@ function App() {
             <button
               onClick={startRecording}
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              disabled={recording}
             >
               <Play size={18} /> Start
             </button>
             <button
               onClick={pauseRecording}
               className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+              disabled={!recording}
             >
               <Pause size={18} /> Pause
             </button>
             <button
               onClick={stopRecording}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              disabled={!recording}
             >
               <StopCircle size={18} /> Stop
             </button>
@@ -118,16 +126,14 @@ function App() {
 
           <button
             onClick={handleTranscribe}
-            disabled={!selectedFile}
-            className={`mt-6 px-6 py-2 rounded shadow ${selectedFile
+            disabled={!selectedFile || loading}
+            className={`mt-6 px-6 py-2 rounded shadow ${selectedFile && !loading
                 ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                 : 'bg-gray-600 text-gray-300 cursor-not-allowed'
               }`}
           >
-            Upload and Transcribe
+            {loading ? 'Transcribing...' : 'Upload and Transcribe'}
           </button>
-
-
 
           {transcript && (
             <div className="mt-6 text-sm bg-gray-700 p-4 rounded text-white w-full">
