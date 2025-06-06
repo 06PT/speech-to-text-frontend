@@ -64,7 +64,7 @@ function App() {
     formData.append('audio', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -118,10 +118,16 @@ function App() {
 
           <button
             onClick={handleTranscribe}
-            className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow"
+            disabled={!selectedFile}
+            className={`mt-6 px-6 py-2 rounded shadow ${selectedFile
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
           >
             Upload and Transcribe
           </button>
+
+
 
           {transcript && (
             <div className="mt-6 text-sm bg-gray-700 p-4 rounded text-white w-full">
